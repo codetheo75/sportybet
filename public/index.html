@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SportyBet Search</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <div class="container">
+        <h1>SportyBet Search</h1>
+        <div>
+            <input type="text" id="searchInput" placeholder="Enter Share Code">
+            <button hx-get="/search" hx-trigger="click" hx-target="#results" hx-indicator="#loadingIndicator">Search</button>
+            <progress id="loadingIndicator" style="display:none;"></progress>
+        </div>
+        <div id="results"></div>
+    </div>
+
+    <script>
+        function search() {
+            const shareCode = document.getElementById('searchInput').value;
+            const resultsContainer = document.getElementById('results');
+            const loadingIndicator = document.getElementById('loadingIndicator');
+    
+            if (shareCode) {
+                // Show loading indicator
+                loadingIndicator.style.display = 'block';
+    
+                fetch(`/search/${shareCode}`)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! Status: ${response.status}`);
+                        }
+                        return response.json();
+                    })
+                    .then(results => {
+                        // Hide loading indicator
+                        loadingIndicator.style.display = 'none';
+    
+                        // Clear previous results
+                        resultsContainer.innerHTML = '';
+    
+                        if (Array.isArray(results) && results.length > 0) {
+                            results.forEach(result => {
+                                // Check if expected properties exist
+                                if (result && result.shareCode && result.homeTeam && result.awayTeam && result.startTime && result.selectedOutcome && result.odds) {
+                                    const resultElement = document.createElement('div');
+                                    resultElement.innerHTML = `
+                                        <p>Share Code: ${result.shareCode}</p>
+                                        <p>Home Team: ${result.homeTeam}</p>
+                                        <p>Away Team: ${result.awayTeam}</p>
+                                        <p>Start Time: ${result.startTime}</p>
+                                        <p>Selected Outcome: ${result.selectedOutcome} (Odds: ${result.odds})</p>
+                                        <hr>
+                                    `;
+                                    resultsContainer.appendChild(resultElement);
+                                } else {
+                                    console.error('Invalid result format:', result);
+                                }
+                            });
+                        } else {
+                            resultsContainer.innerHTML = '<p>No results found.</p>';
+                        }
+                    })
+                    .catch(error => {
+                        // Hide loading indicator
+                        loadingIndicator.style.display = 'none';
+                        console.error(`Failed to retrieve data. Error: ${error.message}`);
+    
+                        // Display error to the user
+                        resultsContainer.innerHTML = `<p>Error: ${error.message}</p>`;
+                    });
+            }
+        }
+    
+        document.getElementById('searchInput').addEventListener('keyup', function (event) {
+            if (event.key === 'Enter') {
+                search();
+            }
+        });
+    </script>
+</body>
+
+</html>
